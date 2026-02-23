@@ -1,6 +1,6 @@
 /*
  * WebX - Under Development
- * Copyright (c) 2025 Chris Mason <chris@netnix.org>
+ * Copyright (c) 2026 Chris Mason <chris@netnix.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -237,7 +237,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
     fmt.Fprintf(os.Stdout, "WebX v%s\n", Version)
-    fmt.Fprintf(os.Stdout, "Copyright (c) 2025 Chris Mason <chris@netnix.org>\n\n")
+    fmt.Fprintf(os.Stdout, "Copyright (c) 2026 Chris Mason <chris@netnix.org>\n\n")
 
   } else {
     log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
