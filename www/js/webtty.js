@@ -1,12 +1,27 @@
 (() => {
   window.addEventListener('load', (e) => {
-    const t = new Terminal({
+    let terminal = new Terminal({
       theme: {
         foreground: '#b3b0d6',
         background: '#29283b'
-      }
+      },
+      cursorBlink: true,
+      fullscreenWin: true,
+      maximizeWin: true
     });
-    t.open(document.getElementById('terminal'));
-    t.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ')
+
+    terminal.open(document.getElementById('terminal'));
+
+    let url = new URL('/tty', window.location.href);
+    url.protocol = url.protocol.replace('http', 'ws');
+    let ws = new WebSocket(url);
+
+    ws.addEventListener('open', () => {
+      terminal.loadAddon(new AttachAddon.AttachAddon(ws));
+    });
+
+    ws.addEventListener('close', () => {
+      terminal.write('\n\nConnection Closed\n');
+    });
   });
 })();

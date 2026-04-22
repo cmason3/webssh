@@ -8,3 +8,7 @@ body {
   white-space: pre-wrap;
   word-break: break-all;
 }
+#terminal {
+  height: 100%;
+  width: 100%;
+}
