@@ -3,16 +3,15 @@
   <head>
     <meta charset="utf-8">
     <title>WebTTY - Under Development</title>
-    <!-- https://app.unpkg.com/@xterm/xterm -->
-    <link rel="stylesheet" href="/{{.Version}}/css/xterm.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/firacode/6.2.0/fira_code.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@xterm/xterm@6.0.0/css/xterm.css" />
     <link rel="stylesheet" href="/{{.Version}}/css/webtty.css" />
   </head>
   <body>
     <div id="terminal"></div>
-    <!-- https://app.unpkg.com/@xterm/xterm -->
-    <!-- https://app.unpkg.com/@xterm/addon-attach -->
-    <script src="/{{.Version}}/js/xterm.js"></script>
-    <script src="/{{.Version}}/js/xterm-addon-attach.js"></script>
+    <script src="https://unpkg.com/@xterm/xterm@6.0.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-attach@0.12.0/lib/addon-attach.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-fit@0.11.0/lib/addon-fit.js"></script>
     <script src="/{{.Version}}/js/webtty.js"></script>
   </body>
 </html>

@@ -32,9 +32,11 @@ import (
   "strings"
   "context"
   "syscall"
+  "os/exec"
   "net/http"
   "os/signal"
   "html/template"
+  "github.com/creack/pty"
   "github.com/gorilla/websocket"
 )
 
@@ -115,6 +117,65 @@ func logRequest(h http.Handler, xffPtr bool) http.Handler {
       slog("[%s] {%s} %s %s\n", _w.remoteHost, statusCode, r.Method, r.URL.Path)
     }
   })
+}
+
+func ttyHandler() func(http.ResponseWriter, *http.Request) {
+  return func(w http.ResponseWriter, r *http.Request) {
+    slog("in tty handler\n")
+    if c, err := websocket.Upgrade(w, r, nil, 1024, 1024); err == nil {
+      defer c.Close()
+
+      w.(*httpWriter).statusCode = 0
+
+      cmd := exec.Command("/usr/bin/bash")
+      cmd.Env = os.Environ()
+
+      if tty, err := pty.Start(cmd); err == nil {
+        go func() {
+          for {
+            buffer := make([]byte, 1024)
+            if bytes, err := tty.Read(buffer); err == nil {
+              if c.WriteMessage(websocket.BinaryMessage, buffer[:bytes]); err != nil {
+                slog("error writing to socket\n")
+                break
+              }
+            } else {
+              slog("closed down due to error\n")
+
+              if cmd.Process.Kill() == nil {
+                if _, err := cmd.Process.Wait(); err == nil {
+                  tty.Close()
+                }
+              }
+              break
+            }
+          }
+        }()
+
+        for {
+          if _, data, err := c.ReadMessage(); err == nil {
+            buffer := bytes.Trim(data, "\x00")
+
+            if buffer[0] == 1 {
+              pty.Setsize(tty, &pty.Winsize{ Rows: uint16(buffer[1]) + 1, Cols: uint16(buffer[2]) })
+
+            } else {
+              if _, err := tty.Write(buffer); err != nil {
+                slog("error writing to tty\n")
+                break
+              }
+            }
+          } else {
+            slog("error reading from websocket\n")
+          }
+        }
+      } else {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+      }
+    } else {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+    }
+  }
 }
 
 func logHandler(webLogToken string) func(http.ResponseWriter, *http.Request) {
@@ -220,20 +281,6 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
   })
 }
 
-func apiHandler(w http.ResponseWriter, r *http.Request) {
-  if r.Header.Get("Content-Type") == "application/json" {
-    if r.URL.Path == "/api/create" {
-      w.Header().Set("Content-Type", "application/json")
-      fmt.Fprintf(w, "{}\n")
-
-    } else {
-      http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-    }
-  } else {
-    http.Error(w, http.StatusText(http.StatusUnsupportedMediaType), http.StatusUnsupportedMediaType)
-  }
-}
-
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
     fmt.Fprintf(os.Stdout, "WebTTY v%s\n", Version)
@@ -258,7 +305,7 @@ func main() {
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     eTag := ternary(*noCachePtr, fmt.Sprintf("%d", time.Now().UnixMilli()), Version)
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, eTag))
-    mux.HandleFunc("POST /api/", apiHandler)
+    mux.HandleFunc("GET /tty", ttyHandler())
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {

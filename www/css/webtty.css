@@ -1,6 +1,7 @@
 body {
   color: #b3b0d6;
   background: #29283b;
+  overflow: hidden;
 }
 #logs {
   font-size: small;
@@ -9,6 +10,8 @@ body {
   word-break: break-all;
 }
 #terminal {
+  height: 98vh;
+}
+#terminal div {
   height: 100%;
-  width: 100%;
 }
