@@ -23,8 +23,8 @@
         brightWhite: "#ffffff",
         brightYellow: "#fdd877"
       },
+      lineHeight: 1.2,
       cursorBlink: true,
-      cursorStyle: "underline",
       cursorInactiveStyle: "none",
       fontWeightBold: "normal"
     });
@@ -37,7 +37,7 @@
       fitAddon.fit();
     });
 
-    let url = new URL("/tty", window.location.href);
+    let url = new URL("/webtty", window.location.href);
     url.protocol = url.protocol.replace("http", "ws");
     let ws = new WebSocket(url);
 

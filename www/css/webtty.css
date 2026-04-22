@@ -1,17 +1,18 @@
 body {
   color: #b3b0d6;
   background: #29283b;
-  overflow: hidden;
+  display: grid;
+  grid-template-rows: 100vh;
+  place-items: center;
+  margin: 0px;
+}
+#terminal {
+  height: 98%;
+  width: 98%;
 }
 #logs {
   font-size: small;
   line-height: 1.8;
   white-space: pre-wrap;
   word-break: break-all;
-}
-#terminal {
-  height: 98vh;
-}
-#terminal div {
-  height: 100%;
 }

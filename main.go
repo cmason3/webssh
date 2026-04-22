@@ -119,15 +119,15 @@ func logRequest(h http.Handler, xffPtr bool) http.Handler {
   })
 }
 
-func ttyHandler() func(http.ResponseWriter, *http.Request) {
+func webTtyHandler() func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
-    slog("in tty handler\n")
     if c, err := websocket.Upgrade(w, r, nil, 1024, 1024); err == nil {
       defer c.Close()
 
       w.(*httpWriter).statusCode = 0
+      slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[34m101\033[0m", r.Method, r.URL.Path)
 
-      cmd := exec.Command("/usr/bin/bash")
+      cmd := exec.Command("/bin/bash")
       cmd.Env = os.Environ()
 
       if tty, err := pty.Start(cmd); err == nil {
@@ -243,19 +243,14 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
       r.URL.Path = "/index.html"
     }
 
-    if (eTag == Version) && (r.Header.Get("If-None-Match") == eTag) {
+    if r.Header.Get("If-None-Match") == eTag {
       w.WriteHeader(http.StatusNotModified)
 
     } else {
       if strings.HasPrefix(r.URL.Path, fmt.Sprintf("/%s/", eTag)) {
         r.URL.Path = strings.TrimPrefix(r.URL.Path[1:], eTag)
+        w.Header().Set("Cache-Control", "max-age=31536000, immutable")
 
-        if eTag == Version {
-          w.Header().Set("Cache-Control", "max-age=31536000, immutable")
-
-        } else {
-          w.Header().Set("Cache-Control", "max-age=0, no-store")
-        }
       } else {
         w.Header().Set("Cache-Control", "max-age=0, must-revalidate")
         w.Header().Set("ETag", eTag)
@@ -294,7 +289,6 @@ func main() {
   pPtr := flag.Int("p", 8080, "Listen Port")
   xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
   webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_WEBLOG_TOKEN)")
-  noCachePtr := flag.Bool("nocache", false, "Disable Content Caching")
   flag.Parse()
 
   sCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -303,9 +297,8 @@ func main() {
   mux := http.NewServeMux()
   subFS, _ := fs.Sub(www, "www")
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
-    eTag := ternary(*noCachePtr, fmt.Sprintf("%d", time.Now().UnixMilli()), Version)
-    mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, eTag))
-    mux.HandleFunc("GET /tty", ttyHandler())
+    mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
+    mux.HandleFunc("GET /webtty", webTtyHandler())
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {
