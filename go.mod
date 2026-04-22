@@ -1,4 +1,4 @@
-module github.com/cmason3/webssh
+module github.com/cmason3/webtty
 
 go 1.25.5
 

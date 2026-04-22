@@ -1,5 +1,5 @@
 /*
- * WebSSH
+ * WebTTY
  * Copyright (c) 2026 Chris Mason <chris@netnix.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -126,7 +126,7 @@ func logHandler(webLogToken string) func(http.ResponseWriter, *http.Request) {
 
       w.(*httpWriter).statusCode = 0
 
-      if cookie, err := r.Cookie("WebSSH-WebLog-Token"); err != nil || cookie.Value != webLogToken {
+      if cookie, err := r.Cookie("WebTTY-WebLog-Token"); err != nil || cookie.Value != webLogToken {
         slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[31m401\033[0m", r.Method, r.URL.Path)
         c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))))
         return
@@ -236,7 +236,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
-    fmt.Fprintf(os.Stdout, "WebSSH v%s\n", Version)
+    fmt.Fprintf(os.Stdout, "WebTTY v%s\n", Version)
     fmt.Fprintf(os.Stdout, "Copyright (c) 2026 Chris Mason <chris@netnix.org>\n\n")
 
   } else {
@@ -246,7 +246,7 @@ func main() {
   lPtr := flag.String("l", "127.0.0.1", "Listen Address")
   pPtr := flag.Int("p", 8080, "Listen Port")
   xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
-  webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBSSH_WEBLOG_TOKEN)")
+  webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_WEBLOG_TOKEN)")
   noCachePtr := flag.Bool("nocache", false, "Disable Content Caching")
   flag.Parse()
 
@@ -261,11 +261,11 @@ func main() {
     mux.HandleFunc("POST /api/", apiHandler)
 
     if *webLogPtr {
-      if webLogToken, defined := os.LookupEnv("WEBSSH_WEBLOG_TOKEN"); defined {
+      if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {
         mux.HandleFunc("GET /logs", logHandler(webLogToken))
 
       } else {
-        fmt.Fprintf(os.Stdout, "Error: Environment WEBSSH_WEBLOG_TOKEN is not defined\n")
+        fmt.Fprintf(os.Stdout, "Error: Environment WEBTTY_WEBLOG_TOKEN is not defined\n")
         os.Exit(1)
       }
     } else {
@@ -281,7 +281,7 @@ func main() {
     }
 
     go func() {
-      slog("Starting WebSSH (PID is %d) on http://%v...\n", os.Getpid(), s.Addr)
+      slog("Starting WebTTY (PID is %d) on http://%v...\n", os.Getpid(), s.Addr)
 
       if err := s.ListenAndServe(); err != http.ErrServerClosed {
         log.Fatalf("Error: %v\n", err)

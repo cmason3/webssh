@@ -81,7 +81,7 @@
 
     document.getElementById('btoken').addEventListener('click', (e) => {
       if (document.getElementById('token').value.trim().length) {
-        document.cookie = 'WebSSH-WebLog-Token=' + document.getElementById('token').value + '; max-age=86400; path=/';
+        document.cookie = 'WebTTY-WebLog-Token=' + document.getElementById('token').value + '; max-age=86400; path=/';
         m.hide();
         connect();
       }
