@@ -1,4 +1,4 @@
-module github.com/cmason3/webx
+module github.com/cmason3/webssh
 
 go 1.25.5
 
