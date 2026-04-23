@@ -1,5 +1,5 @@
 /*
- * WebTTY
+ * WebTTY - Remote Terminal via WebSocket
  * Copyright (c) 2026 Chris Mason <chris@netnix.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -72,11 +72,6 @@ func (w *httpWriter) WriteHeader(statusCode int) {
   w.ResponseWriter.WriteHeader(w.statusCode)
 }
 
-func ternary[T any](c bool, t, f T) T {
-  if c { return t }
-  return f
-}
-
 func slog(f string, a ...any) {
   m := fmt.Sprintf(f, a...)
   logMutex.Lock()
@@ -119,7 +114,7 @@ func logRequest(h http.Handler, xffPtr bool) http.Handler {
   })
 }
 
-func webTtyHandler() func(http.ResponseWriter, *http.Request) {
+func webTtyHandler(cPtr string) func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
     if c, err := websocket.Upgrade(w, r, nil, 1024, 1024); err == nil {
       defer c.Close()
@@ -127,7 +122,7 @@ func webTtyHandler() func(http.ResponseWriter, *http.Request) {
       w.(*httpWriter).statusCode = 0
       slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[34m101\033[0m", r.Method, r.URL.Path)
 
-      cmd := exec.Command("/bin/bash")
+      cmd := exec.Command(cPtr)
       cmd.Env = os.Environ()
 
       if tty, err := pty.Start(cmd); err == nil {
@@ -278,18 +273,34 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
 
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
-    fmt.Fprintf(os.Stdout, "WebTTY v%s\n", Version)
+    fmt.Fprintf(os.Stdout, "WebTTY v%s - Remote Terminal via WebSocket\n", Version)
     fmt.Fprintf(os.Stdout, "Copyright (c) 2026 Chris Mason <chris@netnix.org>\n\n")
 
   } else {
     log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
   }
 
+  flag.Usage = func() {
+    fmt.Fprintf(os.Stderr, "Usage: webtty [-l <address>] [-p <port>] [-xff] [-weblog] -c \"<command> [args]\"\n")
+  }
+
   lPtr := flag.String("l", "127.0.0.1", "Listen Address")
   pPtr := flag.Int("p", 8080, "Listen Port")
   xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
   webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_WEBLOG_TOKEN)")
+  cPtr := flag.String("c", "", "Command to Execute")
   flag.Parse()
+
+  if len(flag.Args()) > 0 {
+    fmt.Fprintf(os.Stderr, "unknown flags provided: %s\n", strings.Join(flag.Args(), ", "))
+    flag.Usage()
+    os.Exit(0);
+
+  } else if len(*cPtr) == 0 {
+    fmt.Fprintf(os.Stderr, "mandatory flag not provided: -c\n")
+    flag.Usage()
+    os.Exit(0)
+  }
 
   sCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
   defer stop()
@@ -298,7 +309,7 @@ func main() {
   subFS, _ := fs.Sub(www, "www")
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
-    mux.HandleFunc("GET /webtty", webTtyHandler())
+    mux.HandleFunc("GET /webtty", webTtyHandler(*cPtr))
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {

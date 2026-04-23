@@ -24,7 +24,6 @@
         brightYellow: "#fdd877"
       },
       lineHeight: 1.2,
-      cursorBlink: true,
       cursorInactiveStyle: "none",
       fontWeightBold: "normal"
     });
@@ -49,13 +48,15 @@
         ws.send(new Uint8Array([1, e.rows, e.cols]));
       });
 
+      terminal.onTitleChange((e) => {
+        document.title = e;
+      });
+
       setTimeout(() => fitAddon.fit());
     });
 
     ws.addEventListener("close", () => {
-      terminal.write("\r\nConnection Closed");
-      terminal.options.cursorBlink = false;
-      terminal.blur();
+      terminal.write("\r\nConnection Closed\033[?25l");
     });
   });
 })();
