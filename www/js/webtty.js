@@ -56,7 +56,10 @@
     });
 
     ws.addEventListener("close", () => {
-      terminal.write("\r\nConnection Closed\033[?25l");
+      if (terminal.buffer.active.cursorX > 0) {
+        terminal.write("\r\n");
+      }
+      terminal.write("Connection Closed\033[?25l");
     });
   });
 })();

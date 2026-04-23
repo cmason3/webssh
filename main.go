@@ -114,58 +114,68 @@ func logRequest(h http.Handler, xffPtr bool) http.Handler {
   })
 }
 
-func webTtyHandler(cPtr string) func(http.ResponseWriter, *http.Request) {
+func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
     if c, err := websocket.Upgrade(w, r, nil, 1024, 1024); err == nil {
       defer c.Close()
 
       w.(*httpWriter).statusCode = 0
-      slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[34m101\033[0m", r.Method, r.URL.Path)
 
-      cmd := exec.Command(cPtr)
-      cmd.Env = os.Environ()
-
+      cmd := exec.Command(args[0], args[1:]...)
       if tty, err := pty.Start(cmd); err == nil {
+        slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[34m101\033[0m", r.Method, r.URL.Path)
+
+        go func() {
+          for {
+            if c.WriteMessage(websocket.PingMessage, []byte("PING")) != nil {
+              c.Close()
+              break
+            }
+            time.Sleep(30 * time.Second)
+          }
+        }()
+
         go func() {
           for {
             buffer := make([]byte, 1024)
             if bytes, err := tty.Read(buffer); err == nil {
               if c.WriteMessage(websocket.BinaryMessage, buffer[:bytes]); err != nil {
-                slog("error writing to socket\n")
+                c.Close()
                 break
               }
             } else {
-              slog("closed down due to error\n")
-
               if cmd.Process.Kill() == nil {
                 if _, err := cmd.Process.Wait(); err == nil {
                   tty.Close()
                 }
               }
+              c.Close()
               break
             }
           }
         }()
 
         for {
-          if _, data, err := c.ReadMessage(); err == nil {
+          if msgtype, data, err := c.ReadMessage(); err == nil {
             buffer := bytes.Trim(data, "\x00")
 
-            if buffer[0] == 1 {
+            if (msgtype == websocket.BinaryMessage) && (buffer[0] == 1) {
               pty.Setsize(tty, &pty.Winsize{ Rows: uint16(buffer[1]) + 1, Cols: uint16(buffer[2]) })
 
             } else {
               if _, err := tty.Write(buffer); err != nil {
-                slog("error writing to tty\n")
                 break
               }
             }
           } else {
-            slog("error reading from websocket\n")
+            break
           }
         }
+        slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[32m200\033[0m", r.Method, r.URL.Path)
+
       } else {
-        http.Error(w, err.Error(), http.StatusInternalServerError)
+        slog("[%s] {%s} %s %s (%s)\n", w.(*httpWriter).remoteHost, "\033[31m500\033[0m", r.Method, r.URL.Path, err)
+        c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("Error: %s", err)))
       }
     } else {
       http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -281,25 +291,18 @@ func main() {
   }
 
   flag.Usage = func() {
-    fmt.Fprintf(os.Stderr, "Usage: webtty [-l <address>] [-p <port>] [-xff] [-weblog] -c \"<command> [args]\"\n")
+    fmt.Fprintf(os.Stderr, "Usage: webtty [-l <address>] [-p <port>] [-xff] [-weblog] <command> [args]\n")
   }
 
   lPtr := flag.String("l", "127.0.0.1", "Listen Address")
   pPtr := flag.Int("p", 8080, "Listen Port")
   xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
   webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_WEBLOG_TOKEN)")
-  cPtr := flag.String("c", "", "Command to Execute")
   flag.Parse()
 
-  if len(flag.Args()) > 0 {
-    fmt.Fprintf(os.Stderr, "unknown flags provided: %s\n", strings.Join(flag.Args(), ", "))
+  if len(flag.Args()) == 0 {
     flag.Usage()
-    os.Exit(0);
-
-  } else if len(*cPtr) == 0 {
-    fmt.Fprintf(os.Stderr, "mandatory flag not provided: -c\n")
-    flag.Usage()
-    os.Exit(0)
+    os.Exit(1);
   }
 
   sCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
@@ -309,7 +312,7 @@ func main() {
   subFS, _ := fs.Sub(www, "www")
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
-    mux.HandleFunc("GET /webtty", webTtyHandler(*cPtr))
+    mux.HandleFunc("GET /webtty", webTtyHandler(flag.Args()))
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {
