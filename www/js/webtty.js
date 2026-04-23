@@ -36,7 +36,7 @@
       fitAddon.fit();
     });
 
-    let url = new URL("/webtty", window.location.href);
+    let url = new URL("webtty", window.location.href);
     url.protocol = url.protocol.replace("http", "ws");
     let ws = new WebSocket(url);
 
