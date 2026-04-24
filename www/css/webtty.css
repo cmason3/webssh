@@ -1,5 +1,4 @@
 body {
-  # messsed up logs.html with this
   color: #b3b0d6;
   background: #29283b;
   display: grid;
@@ -8,6 +7,6 @@ body {
   margin: 0px;
 }
 div#terminal {
-  height: 98%;
-  width: 98%;
+  height: 98vh;
+  width: 98vw;
 }

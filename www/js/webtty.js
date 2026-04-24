@@ -32,7 +32,7 @@
     terminal.open(document.getElementById("terminal"));
     terminal.loadAddon(fitAddon);
 
-    window.addEventListener("resize", (e) => {
+    window.addEventListener("resize", () => {
       fitAddon.fit();
     });
 
@@ -45,14 +45,18 @@
       terminal.focus();
 
       terminal.onResize((e) => {
-        ws.send(new Uint8Array([1, e.rows, e.cols]));
+        if (ws.readyState == WebSocket.OPEN) {
+          ws.send(new Uint8Array([1, e.rows, e.cols]));
+        }
+        terminal.write(" ");
+        terminal.write("\b");
       });
 
       terminal.onTitleChange((e) => {
         document.title = e;
       });
 
-      setTimeout(() => fitAddon.fit());
+      fitAddon.fit();
     });
 
     ws.addEventListener("close", () => {
