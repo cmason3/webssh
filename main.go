@@ -1,5 +1,5 @@
 /*
- * WebTTY - Remote Terminal via WebSocket
+ * WebTTY - Remote Terminal
  * Copyright (c) 2026 Chris Mason <chris@netnix.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
@@ -123,36 +123,42 @@ func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
 
       cmd := exec.Command(args[0], args[1:]...)
       if tty, err := pty.Start(cmd); err == nil {
+        var wsMutex sync.Mutex
+        defer tty.Close()
+
         slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[34m101\033[0m", r.Method, r.URL.Path)
 
         go func() {
           for {
-            if c.WriteMessage(websocket.PingMessage, []byte("PING")) != nil {
-              c.Close()
+            wsMutex.Lock()
+            err := c.WriteMessage(websocket.PingMessage, []byte("PING"))
+            wsMutex.Unlock()
+
+            if err != nil {
               break
             }
             time.Sleep(30 * time.Second)
           }
+          c.Close()
         }()
 
         go func() {
+          buffer := make([]byte, 1024)
+
           for {
-            buffer := make([]byte, 1024)
             if bytes, err := tty.Read(buffer); err == nil {
-              if c.WriteMessage(websocket.BinaryMessage, buffer[:bytes]); err != nil {
-                c.Close()
+              wsMutex.Lock()
+              err := c.WriteMessage(websocket.BinaryMessage, buffer[:bytes])
+              wsMutex.Unlock()
+
+              if err != nil {
                 break
               }
             } else {
-              if cmd.Process.Kill() == nil {
-                if _, err := cmd.Process.Wait(); err == nil {
-                  tty.Close()
-                }
-              }
-              c.Close()
               break
             }
           }
+          c.Close()
         }()
 
         for {
@@ -160,7 +166,7 @@ func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
             buffer := bytes.Trim(data, "\x00")
 
             if (msgtype == websocket.BinaryMessage) && (buffer[0] == 1) {
-              pty.Setsize(tty, &pty.Winsize{ Rows: uint16(buffer[1]) + 1, Cols: uint16(buffer[2]) })
+              pty.Setsize(tty, &pty.Winsize{ Rows: uint16(buffer[1]), Cols: uint16(buffer[2]) })
 
             } else {
               if _, err := tty.Write(buffer); err != nil {
@@ -171,6 +177,9 @@ func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
             break
           }
         }
+        cmd.Process.Kill()
+        cmd.Process.Wait()
+
         slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[32m200\033[0m", r.Method, r.URL.Path)
 
       } else {
@@ -283,7 +292,7 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
 
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
-    fmt.Fprintf(os.Stdout, "WebTTY v%s - Remote Terminal via WebSocket\n", Version)
+    fmt.Fprintf(os.Stdout, "WebTTY v%s - Remote Terminal\n", Version)
     fmt.Fprintf(os.Stdout, "Copyright (c) 2026 Chris Mason <chris@netnix.org>\n\n")
 
   } else {
