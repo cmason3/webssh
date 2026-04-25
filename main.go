@@ -201,7 +201,7 @@ func logHandler(webLogToken string) func(http.ResponseWriter, *http.Request) {
 
       w.(*httpWriter).statusCode = 0
 
-      if cookie, err := r.Cookie("WebTTY-WebLog-Token"); err != nil || cookie.Value != webLogToken {
+      if cookie, err := r.Cookie("WebTTY-Token"); err != nil || cookie.Value != webLogToken {
         slog("[%s] {%s} %s %s\n", w.(*httpWriter).remoteHost, "\033[31m401\033[0m", r.Method, r.URL.Path)
         c.WriteMessage(websocket.TextMessage, []byte(fmt.Sprintf("%d %s", http.StatusUnauthorized, http.StatusText(http.StatusUnauthorized))))
         return
@@ -255,6 +255,9 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
       r.URL.Path = "/index.html"
+
+    } else if r.URL.Path == "/logs" {
+      r.URL.Path = "/logs.html"
     }
 
     if r.Header.Get("If-None-Match") == eTag {
@@ -306,7 +309,7 @@ func main() {
   lPtr := flag.String("l", "127.0.0.1", "Listen Address")
   pPtr := flag.Int("p", 8080, "Listen Port")
   xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
-  webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_WEBLOG_TOKEN)")
+  webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_TOKEN)")
   flag.Parse()
 
   if len(flag.Args()) == 0 {
@@ -321,17 +324,18 @@ func main() {
   subFS, _ := fs.Sub(www, "www")
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
-    mux.HandleFunc("GET /webtty", webTtyHandler(flag.Args()))
+    mux.HandleFunc("GET /_webtty", webTtyHandler(flag.Args()))
 
     if *webLogPtr {
-      if webLogToken, defined := os.LookupEnv("WEBTTY_WEBLOG_TOKEN"); defined {
-        mux.HandleFunc("GET /logs", logHandler(webLogToken))
+      if webLogToken, defined := os.LookupEnv("WEBTTY_TOKEN"); defined {
+        mux.HandleFunc("GET /_logs", logHandler(webLogToken))
 
       } else {
-        fmt.Fprintf(os.Stdout, "Error: Environment WEBTTY_WEBLOG_TOKEN is not defined\n")
+        fmt.Fprintf(os.Stdout, "Error: Environment WEBTTY_TOKEN is not defined\n")
         os.Exit(1)
       }
     } else {
+      mux.HandleFunc("GET /logs", http.NotFound)
       mux.HandleFunc("GET /logs.html", http.NotFound)
     }
 

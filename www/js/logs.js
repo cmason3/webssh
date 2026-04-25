@@ -1,5 +1,5 @@
 (() => {
-  var m = undefined;
+  let m = undefined;
 
   function quote(str) {
     str = str.replaceAll(/&/g, '&amp;');
@@ -23,17 +23,17 @@
   }
 
   window.addEventListener('load', (e) => {
-    var lastPongMessage = 0;
-    var lastMessage = 0;
+    let lastPongMessage = 0;
+    let lastMessage = 0;
 
     function connect() {
-      var url = new URL('/logs', window.location.href);
+      let url = new URL('_logs', window.location.href);
       url.protocol = url.protocol.replace('http', 'ws');
-      var ws = new WebSocket(url);
-      var statusCode = 0;
+      let ws = new WebSocket(url);
+      let statusCode = 0;
 
       ws.addEventListener('open', () => {
-        var h = setInterval(() => {
+        let h = setInterval(() => {
           if ((Date.now() - lastMessage) > 60000) {
             clearInterval(h);
             ws.close();
@@ -81,7 +81,7 @@
 
     document.getElementById('btoken').addEventListener('click', (e) => {
       if (document.getElementById('token').value.trim().length) {
-        document.cookie = 'WebTTY-WebLog-Token=' + document.getElementById('token').value + '; max-age=86400; path=/';
+        document.cookie = 'WebTTY-Token=' + document.getElementById('token').value + '; max-age=86400; path=/';
         m.hide();
         connect();
       }
