@@ -4,7 +4,7 @@
 CGO_ENABLED=0; go build -o webtty -ldflags="-s -w" -trimpath main.go
 ```
 
-To provide a password protected root terminal you can use the following:
+To provide a password protected root terminal on http://localhost:8080 you can use the following:
 
 ```
 sudo useradd -r -d / webtty
