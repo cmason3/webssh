@@ -48,8 +48,6 @@
         if (ws.readyState == WebSocket.OPEN) {
           ws.send(new Uint8Array([1, e.rows, e.cols]));
         }
-        terminal.write(" ");
-        terminal.write("\b");
       });
 
       terminal.onTitleChange((e) => {
