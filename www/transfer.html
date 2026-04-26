@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WebTTY File Transfer</title>
+    <link rel="stylesheet" href="{{.Version}}/css/webtty.css" />
+  </head>
+  <body>
+    <pre>
+      curl -X PUT https://localhost:8080/transfer --data-binary @file.bin
+      curl -X GET https://localhost:8080/transfer/<id> -o file.bin
+    </pre>
+    <input type="file" id="upload">
+    <progress id="up"></progress>
+    <script src="{{.Version}}/js/transfer.js"></script>
+  </body>
+</html>
+

@@ -19,6 +19,7 @@ package main
 
 import (
   "os"
+  "io"
   "fmt"
   "net"
   "log"
@@ -36,6 +37,7 @@ import (
   "net/http"
   "os/signal"
   "html/template"
+  "crypto/sha256"
   "github.com/creack/pty"
   "github.com/gorilla/websocket"
 )
@@ -192,6 +194,20 @@ func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
   }
 }
 
+func uploadHandler() func(http.ResponseWriter, *http.Request) {
+  return func(w http.ResponseWriter, r *http.Request) {
+    if body, err := io.ReadAll(r.Body); err == nil {
+      h := sha256.Sum224(body)
+
+      w.Header().Set("Content-Type", "application/json")
+      fmt.Fprintf(w, "{ \"id\": \"%x\" }\n", h)
+
+    } else {
+      http.Error(w, err.Error(), http.StatusBadRequest)
+    }
+  }
+}
+
 func logHandler(webLogToken string) func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
     if c, err := websocket.Upgrade(w, r, nil, 1024, 1024); err == nil {
@@ -255,6 +271,9 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
       r.URL.Path = "/index.html"
+
+    } else if r.URL.Path == "/transfer" {
+      r.URL.Path = "/transfer.html"
 
     } else if r.URL.Path == "/logs" {
       r.URL.Path = "/logs.html"
@@ -325,6 +344,7 @@ func main() {
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
     mux.HandleFunc("GET /_webtty", webTtyHandler(flag.Args()))
+    mux.HandleFunc("PUT /transfer", uploadHandler())
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_TOKEN"); defined {
