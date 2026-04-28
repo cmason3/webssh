@@ -23,6 +23,7 @@
       });
 
       xHR.open("PUT", "transfer");
+      xHR.setRequestHeader("X-WebTTY-File", e.target.files[0].name);
       xHR.send(e.target.files[0]);
     });
   });

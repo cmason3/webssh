@@ -30,16 +30,18 @@ import (
   "bytes"
   "io/fs"
   "bufio"
+  "regexp"
   "strings"
   "context"
   "syscall"
   "os/exec"
   "net/http"
   "os/signal"
+  "path/filepath"
   "html/template"
-  "crypto/sha256"
   "github.com/creack/pty"
   "github.com/gorilla/websocket"
+  "github.com/lithammer/shortuuid/v4"
 )
 
 const Version = "0.0.1"
@@ -194,16 +196,38 @@ func webTtyHandler(args []string) func(http.ResponseWriter, *http.Request) {
   }
 }
 
-func uploadHandler() func(http.ResponseWriter, *http.Request) {
+func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
-    if body, err := io.ReadAll(r.Body); err == nil {
-      h := sha256.Sum224(body)
+    fn := strings.TrimPrefix(r.URL.Path, "/ft/")
 
-      w.Header().Set("Content-Type", "application/json")
-      fmt.Fprintf(w, "{ \"id\": \"%x\" }\n", h)
+    if regexp.MustCompile(`(?i)^[A-Z0-9._-]+$`).MatchString(fn) {
+      if body, err := io.ReadAll(r.Body); err == nil {
+        uuid := shortuuid.New()
+        
+        if err := os.Mkdir(ftDir + "/" + uuid, 0700); err == nil {
+          if f, err := os.Create(ftDir + "/" + uuid + "/" + fn); err == nil {
+            if _, err := f.Write(body); err == nil {
+              f.Close();
 
+              w.Header().Set("Content-Type", "text/plain")
+              fmt.Fprintf(w, "http://localhost:8080/ft/%s\n", uuid)
+
+            } else {
+              f.Close()
+              os.Remove(f.Name())
+              http.Error(w, err.Error(), http.StatusInternalServerError)
+            }
+          } else {
+            http.Error(w, err.Error(), http.StatusInternalServerError)
+          }
+        } else {
+          http.Error(w, err.Error(), http.StatusInternalServerError)
+        }
+      } else {
+        http.Error(w, err.Error(), http.StatusBadRequest)
+      }
     } else {
-      http.Error(w, err.Error(), http.StatusBadRequest)
+      http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
     }
   }
 }
@@ -322,13 +346,14 @@ func main() {
   }
 
   flag.Usage = func() {
-    fmt.Fprintf(os.Stderr, "Usage: webtty [-l <address>] [-p <port>] [-xff] [-weblog] <command> [args]\n")
+    fmt.Fprintf(os.Stderr, "Usage: webtty [-l <address>] [-p <port>] [-xff] [-weblog] [-ft <dir>] <command> [args]\n")
   }
 
-  lPtr := flag.String("l", "127.0.0.1", "Listen Address")
-  pPtr := flag.Int("p", 8080, "Listen Port")
-  xffPtr := flag.Bool("xff", false, "Use X-Forwarded-For")
-  webLogPtr := flag.Bool("weblog", false, "Enable /logs.html (uses WEBTTY_TOKEN)")
+  lPtr := flag.String("l", "127.0.0.1", "")
+  pPtr := flag.Int("p", 8080, "")
+  xffPtr := flag.Bool("xff", false, "")
+  webLogPtr := flag.Bool("weblog", false, "")
+  ftDirPtr := flag.String("ft", "", "")
   flag.Parse()
 
   if len(flag.Args()) == 0 {
@@ -344,7 +369,20 @@ func main() {
   if tmpl, err := template.ParseFS(subFS, "*.html"); err == nil {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
     mux.HandleFunc("GET /_webtty", webTtyHandler(flag.Args()))
-    mux.HandleFunc("PUT /transfer", uploadHandler())
+
+    if len(*ftDirPtr) > 0 {   
+      if dn, err := filepath.Abs(*ftDirPtr); err == nil {
+        if tf, err := os.CreateTemp(dn, ""); err == nil {
+          tf.Close(); os.Remove(tf.Name())
+          mux.HandleFunc("PUT /ft/", ftHandler(dn))
+
+        } else {
+          log.Fatalf("Error: unable to write to file transfer directory \"%s\"\n", dn)
+        }
+      } else {
+        log.Fatalf("Error: %v\n", err)
+      }
+    }
 
     if *webLogPtr {
       if webLogToken, defined := os.LookupEnv("WEBTTY_TOKEN"); defined {
