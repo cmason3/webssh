@@ -200,34 +200,53 @@ func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
   return func(w http.ResponseWriter, r *http.Request) {
     fn := strings.TrimPrefix(r.URL.Path, "/ft/")
 
-    if regexp.MustCompile(`(?i)^[A-Z0-9._-]+$`).MatchString(fn) {
-      if body, err := io.ReadAll(r.Body); err == nil {
-        uuid := shortuuid.New()
-        
-        if err := os.Mkdir(ftDir + "/" + uuid, 0700); err == nil {
-          if f, err := os.Create(ftDir + "/" + uuid + "/" + fn); err == nil {
-            if _, err := f.Write(body); err == nil {
-              f.Close();
+    if r.Method == http.MethodGet {
+      if regexp.MustCompile(`^(?i)[A-Z2-9]{22}$`).MatchString(fn) {
+        if e, err := os.ReadDir(ftDir + "/" + fn); err == nil {
+          if len(e) == 1 {
+            http.Redirect(w, r, fmt.Sprintf("/ft/%s/%s", fn, e[0].Name()), http.StatusFound)
 
-              w.Header().Set("Content-Type", "text/plain")
-              fmt.Fprintf(w, "http://localhost:8080/ft/%s\n", uuid)
-
+          } else {
+            http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+          }
+        } else {
+          http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+        }
+      } else if regexp.MustCompile(`^(?i)[A-Z2-9]{22}/[A-Z0-9._-]+$`).MatchString(fn) {
+        http.ServeFile(w, r, ftDir + "/" + fn)
+      } else {
+        http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+      }
+    } else if r.Method == http.MethodPut {
+      if regexp.MustCompile(`(?i)^[A-Z0-9._-]+$`).MatchString(fn) {
+        if body, err := io.ReadAll(r.Body); err == nil {
+          uuid := shortuuid.New()
+          
+          if err := os.Mkdir(ftDir + "/" + uuid, 0700); err == nil {
+            if f, err := os.Create(ftDir + "/" + uuid + "/" + fn); err == nil {
+              if _, err := f.Write(body); err == nil {
+                f.Close();
+  
+                w.Header().Set("Content-Type", "application/json")
+                fmt.Fprintf(w, "{\n  \"uuid\": \"%s\"\n}\n", uuid)
+  
+              } else {
+                f.Close()
+                os.Remove(f.Name())
+                http.Error(w, err.Error(), http.StatusInternalServerError)
+              }
             } else {
-              f.Close()
-              os.Remove(f.Name())
               http.Error(w, err.Error(), http.StatusInternalServerError)
             }
           } else {
             http.Error(w, err.Error(), http.StatusInternalServerError)
           }
         } else {
-          http.Error(w, err.Error(), http.StatusInternalServerError)
+          http.Error(w, err.Error(), http.StatusBadRequest)
         }
       } else {
-        http.Error(w, err.Error(), http.StatusBadRequest)
+        http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
       }
-    } else {
-      http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
     }
   }
 }
@@ -295,9 +314,6 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string) http.Handl
   return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     if r.URL.Path == "/" {
       r.URL.Path = "/index.html"
-
-    } else if r.URL.Path == "/transfer" {
-      r.URL.Path = "/transfer.html"
 
     } else if r.URL.Path == "/logs" {
       r.URL.Path = "/logs.html"
@@ -374,6 +390,7 @@ func main() {
       if dn, err := filepath.Abs(*ftDirPtr); err == nil {
         if tf, err := os.CreateTemp(dn, ""); err == nil {
           tf.Close(); os.Remove(tf.Name())
+          mux.HandleFunc("GET /ft/", ftHandler(dn))
           mux.HandleFunc("PUT /ft/", ftHandler(dn))
 
         } else {

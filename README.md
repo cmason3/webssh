@@ -4,7 +4,7 @@
 CGO_ENABLED=0; go build -o webtty -ldflags="-s -w" -trimpath main.go
 ```
 
-To provide a password protected root terminal on http://localhost:8080 you can use the following:
+To provide a password protected root terminal on http://localhost:8080 you can use the following (it is advisable to put HAProxy in front of WebTTY to provide TLS, as well as using this internally and not using it over the public Internet):
 
 ```
 sudo useradd -r -d / webtty
@@ -32,4 +32,26 @@ sudo systemctl daemon-reload
 sudo systemctl enable --now webtty.service
 
 sudo systemctl status webtty.service
+```
+
+### WebTTY - File Transfer
+
+It also supports a simple File Tranfer capability using the `-ft` argument to specify a directory for storage, which can then be used via the following curl commands:
+
+#### Upload
+
+```
+curl -X PUT http://localhost:8080/ft/<file> --data-binary @<file>
+```
+
+```json
+{
+  "uuid": "GR9JNC4HuDrvKkCqxw7LkJ"
+}
+```
+
+#### Download
+
+```
+curl -L http://localhost:8080/ft/<uuid> --output <file>
 ```
