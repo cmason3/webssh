@@ -204,7 +204,7 @@ func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
       if regexp.MustCompile(`^(?i)[A-Z2-9]{22}$`).MatchString(fn) {
         if e, err := os.ReadDir(ftDir + "/" + fn); err == nil {
           if len(e) == 1 {
-            http.Redirect(w, r, fmt.Sprintf("/ft/%s/%s", fn, e[0].Name()), http.StatusFound)
+            http.Redirect(w, r, fmt.Sprintf("ft/%s/%s", fn, e[0].Name()), http.StatusFound)
 
           } else {
             http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
