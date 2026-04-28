@@ -204,7 +204,8 @@ func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
       if regexp.MustCompile(`^(?i)[A-Z2-9]{22}$`).MatchString(fn) {
         if e, err := os.ReadDir(ftDir + "/" + fn); err == nil {
           if len(e) == 1 {
-            http.Redirect(w, r, fmt.Sprintf("ft/%s/%s", fn, e[0].Name()), http.StatusFound)
+            w.Header().Set("Location", fmt.Sprintf("%s/%s", fn, e[0].Name()))
+            http.Error(w, http.StatusText(http.StatusFound), http.StatusFound)
 
           } else {
             http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -221,15 +222,15 @@ func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
       if regexp.MustCompile(`(?i)^[A-Z0-9._-]+$`).MatchString(fn) {
         if body, err := io.ReadAll(r.Body); err == nil {
           uuid := shortuuid.New()
-          
+
           if err := os.Mkdir(ftDir + "/" + uuid, 0700); err == nil {
             if f, err := os.Create(ftDir + "/" + uuid + "/" + fn); err == nil {
               if _, err := f.Write(body); err == nil {
                 f.Close();
-  
+
                 w.Header().Set("Content-Type", "application/json")
                 fmt.Fprintf(w, "{\n  \"uuid\": \"%s\"\n}\n", uuid)
-  
+
               } else {
                 f.Close()
                 os.Remove(f.Name())
@@ -386,7 +387,7 @@ func main() {
     mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version))
     mux.HandleFunc("GET /_webtty", webTtyHandler(flag.Args()))
 
-    if len(*ftDirPtr) > 0 {   
+    if len(*ftDirPtr) > 0 {
       if dn, err := filepath.Abs(*ftDirPtr); err == nil {
         if tf, err := os.CreateTemp(dn, ""); err == nil {
           tf.Close(); os.Remove(tf.Name())
@@ -418,7 +419,7 @@ func main() {
       Addr: fmt.Sprintf("%s:%d", *lPtr, *pPtr),
       Handler: logRequest(mux, *xffPtr),
       BaseContext: func(net.Listener) context.Context {
-        return sCtx 
+        return sCtx
       },
     }
 
