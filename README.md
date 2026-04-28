@@ -36,7 +36,7 @@ sudo systemctl status webtty.service
 
 ### WebTTY - File Transfer
 
-It also supports a simple File Tranfer capability using the `-ft` argument to specify a directory for storage, which can then be used via the following curl commands:
+It also supports a simple File Transfer capability using the `-ft` argument to specify a directory for storage, which can then be used via the following curl commands:
 
 #### Upload
 
