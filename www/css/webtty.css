@@ -1,6 +1,6 @@
 body {
   color: #b3b0d6;
-  #background: #29283b;
+  background: #29283b;
 }
 body.terminal {
   display: grid;
