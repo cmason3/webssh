@@ -55,9 +55,10 @@ type httpWriter struct {
   http.ResponseWriter
   remoteHost string
   statusCode int
+  uuid string
 }
 func responseWriter(w http.ResponseWriter) *httpWriter {
-  return &httpWriter { w, "", http.StatusOK }
+  return &httpWriter { w, "", http.StatusOK, "" }
 }
 func (w *httpWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
   hj, _ := w.ResponseWriter.(http.Hijacker)
@@ -113,7 +114,12 @@ func logRequest(h http.Handler, xffPtr bool) http.Handler {
       } else {
         statusCode = fmt.Sprintf("\033[32m%d\033[0m", _w.statusCode)
       }
-      slog("[%s] {%s} %s %s\n", _w.remoteHost, statusCode, r.Method, r.URL.Path)
+      if len(_w.uuid) > 0 {
+        slog("[%s] {%s} %s %s (%s)\n", _w.remoteHost, statusCode, r.Method, r.URL.Path, _w.uuid)
+
+      } else {
+        slog("[%s] {%s} %s %s\n", _w.remoteHost, statusCode, r.Method, r.URL.Path)
+      }
     }
   })
 }
@@ -201,49 +207,35 @@ func ftHandler(ftDir string) func(http.ResponseWriter, *http.Request) {
     fn := strings.TrimPrefix(r.URL.Path, "/ft/")
 
     if r.Method == http.MethodGet {
-      if regexp.MustCompile(`^(?i)[A-Z2-9]{22}$`).MatchString(fn) {
-        if e, err := os.ReadDir(ftDir + "/" + fn); err == nil {
-          if len(e) == 1 {
-            w.Header().Set("Location", fmt.Sprintf("%s/%s", fn, e[0].Name()))
-            http.Error(w, http.StatusText(http.StatusFound), http.StatusFound)
-
-          } else {
-            http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-          }
-        } else {
-          http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-        }
-      } else if regexp.MustCompile(`^(?i)[A-Z2-9]{22}/[A-Z0-9._-]+$`).MatchString(fn) {
+      if regexp.MustCompile(`^(?i)[A-Z2-9]{22}/[A-Z0-9._-]+$`).MatchString(fn) {
         http.ServeFile(w, r, ftDir + "/" + fn)
+
       } else {
-        http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+        http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
       }
     } else if r.Method == http.MethodPut {
       if regexp.MustCompile(`(?i)^[A-Z0-9._-]+$`).MatchString(fn) {
-        if body, err := io.ReadAll(r.Body); err == nil {
-          uuid := shortuuid.New()
+        w.(*httpWriter).uuid = shortuuid.New()
 
-          if err := os.Mkdir(ftDir + "/" + uuid, 0700); err == nil {
-            if f, err := os.Create(ftDir + "/" + uuid + "/" + fn); err == nil {
-              if _, err := f.Write(body); err == nil {
-                f.Close();
+        if err := os.Mkdir(ftDir + "/" + w.(*httpWriter).uuid, 0700); err == nil {
+          if f, err := os.OpenFile(ftDir + "/" + w.(*httpWriter).uuid + "/" + fn, os.O_WRONLY|os.O_CREATE, 0600); err == nil {
+            defer f.Close()
 
-                w.Header().Set("Content-Type", "application/json")
-                fmt.Fprintf(w, "{\n  \"uuid\": \"%s\"\n}\n", uuid)
+            if _, err := io.Copy(f, r.Body); err == nil {
+              w.WriteHeader(http.StatusOK)
+              fmt.Fprintf(w, "/ft/%s/%s\n", w.(*httpWriter).uuid, fn)
+              return
 
-              } else {
-                f.Close()
-                os.Remove(f.Name())
-                http.Error(w, err.Error(), http.StatusInternalServerError)
-              }
             } else {
               http.Error(w, err.Error(), http.StatusInternalServerError)
             }
           } else {
             http.Error(w, err.Error(), http.StatusInternalServerError)
           }
+          os.RemoveAll(ftDir + "/" + w.(*httpWriter).uuid)
+
         } else {
-          http.Error(w, err.Error(), http.StatusBadRequest)
+          http.Error(w, err.Error(), http.StatusInternalServerError)
         }
       } else {
         http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
