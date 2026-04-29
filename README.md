@@ -41,17 +41,15 @@ It also supports a simple File Transfer capability using the `-ft` argument to s
 #### Upload
 
 ```
-curl -X PUT http://localhost:8080/ft/<file> --data-binary @<file>
+curl -T <file> http://localhost:8080/ft/
 ```
 
-```json
-{
-  "uuid": "GR9JNC4HuDrvKkCqxw7LkJ"
-}
+```
+/ft/<uuid>/<file>
 ```
 
 #### Download
 
 ```
-curl -L http://localhost:8080/ft/<uuid> --output <file>
+curl -Of http://localhost:8080/ft/<uuid>/<file>
 ```
