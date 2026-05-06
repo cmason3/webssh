@@ -26,7 +26,9 @@ The following commands will install WebTTY as a system service and will provide 
 
 ```
 sudo useradd -r -d / webtty
+```
 
+```
 cat <<EOF | sudo tee /etc/systemd/system/webtty.service 1>/dev/null
 [Unit]
 Description=WebTTY - Remote Terminal
@@ -39,7 +41,9 @@ User=webtty
 [Install]
 WantedBy=default.target
 EOF
+```
 
+```
 sudo systemctl daemon-reload
 sudo systemctl enable --now webtty.service
 sudo systemctl status webtty.service
