@@ -29,7 +29,7 @@ sudo useradd -r -d / webtty
 ```
 
 ```
-cat <<EOF | sudo tee /etc/systemd/system/webtty.service 1>/dev/null
+sudo tee /etc/systemd/system/webtty.service >/dev/null <<-EOF
 [Unit]
 Description=WebTTY - Remote Terminal
 
