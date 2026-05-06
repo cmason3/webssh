@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>WebTTY</title>
+    <!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/@xterm/xterm@6.0.0/css/xterm.css" />
+    -->
+    <link rel="stylesheet" href="{{.Version}}/css/ext/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{.Version}}/css/ext/xterm.css" />
+    <link rel="stylesheet" href="{{.Version}}/css/webtty.css" />
+    <link rel="shortcut icon" href="{{.Version}}/webtty.png">
+  </head>
+  <body class="terminal">
+    <div id="mpassword" class="modal fade" data-bs-backdrop="static" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">WebTTY Password</h5>
+          </div>
+          <div class="form-group row modal-body">
+            <div class="col-sm-12">
+              <input type="password" id="password" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="bpassword" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="terminal"></div>
+    <input type="hidden" id="ft" value="{{.FileTransfer}}" />
+    <!--
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/@xterm/xterm@6.0.0/lib/xterm.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-attach@0.12.0/lib/addon-attach.js"></script>
+    <script src="https://unpkg.com/@xterm/addon-fit@0.11.0/lib/addon-fit.js"></script>
+    -->
+    <script src="{{.Version}}/js/ext/bootstrap.bundle.min.js"></script>
+    <script src="{{.Version}}/js/ext/xterm.js"></script>
+    <script src="{{.Version}}/js/ext/addon-attach.js"></script>
+    <script src="{{.Version}}/js/ext/addon-fit.js"></script>
+    <script src="{{.Version}}/js/webtty.js"></script>
+  </body>
+</html>

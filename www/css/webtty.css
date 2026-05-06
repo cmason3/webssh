@@ -1,0 +1,21 @@
+body {
+  color: #b3b0d6;
+  background: #29283b;
+}
+body.terminal {
+  display: grid;
+  grid-template-rows: 100vh;
+  place-items: center;
+  overflow: hidden;
+  margin: 0px;
+}
+div#terminal {
+  height: 98vh;
+  width: 98vw;
+}
+div#logs {
+  font-size: small;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=768, user-scalable=no">
+    <title>WebTTY Logs</title>
+    <!--
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" />
+    -->
+    <link rel="stylesheet" href="{{.Version}}/css/ext/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{.Version}}/css/webtty.css" />
+    <link rel="shortcut icon" href="{{.Version}}/webtty.png">
+  </head>
+  <body>
+    <div id="mtoken" class="modal fade" data-bs-backdrop="static" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">WebTTY WebLog Token</h5>
+          </div>
+          <div class="form-group row modal-body">
+            <div class="col-sm-12">
+              <input type="password" id="token" class="form-control">
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button id="btoken" type="button" class="btn btn-primary">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="container-fluid p-2">
+      <pre id="logs"></pre>
+    </div>
+    <!--
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.bundle.min.js"></script>
+    -->
+    <script src="{{.Version}}/js/ext/bootstrap.bundle.min.js"></script>
+    <script src="{{.Version}}/js/logs.js"></script>
+  </body>
+</html>
