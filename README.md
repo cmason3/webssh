@@ -76,3 +76,6 @@ WebTTY will attempt to provide the correct download URL when uploading files wit
 ```
 http-request set-header X-URL 'https://%[req.hdr(host)]%[path]'
 ```
+
+> [!CAUTION]
+> There are no guarantees the code in any branch will compile or work successfully at any given time - only release tags are guaranteed to compile and work.
