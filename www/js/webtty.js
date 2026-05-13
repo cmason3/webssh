@@ -55,8 +55,7 @@
             ws.removeEventListener("message", this);
 
             terminal.write("\033[1;37mWebTTY - Remote Terminal\r\n");
-            terminal.write("\033[1;37mURL https://github.com/cmason3/webtty\r\n");
-            terminal.write("\033[1;37mCopyright (c) 2026 Chris Mason <chris@netnix.org>\r\n\n");
+            terminal.write("\033[1;37mURL https://github.com/cmason3/webtty\r\n\n");
 
             if (document.getElementById("ft").value === "true") {
               terminal.write("\033[1;37mFile Upload\033[0m\r\n");
