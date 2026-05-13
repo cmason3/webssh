@@ -60,7 +60,8 @@
 
             if (document.getElementById("ft").value === "true") {
               terminal.write("\033[1;37mFile Upload\033[0m\r\n");
-              terminal.write("$ curl -T \033[1;33m<file>\033[0m " + window.location + "ft/\r\n\n");
+              terminal.write("$ curl -T \033[1;33m<file>\033[0m " + window.location + "ft/\r\n");
+              terminal.write("   or " + window.location + "ft\r\n\n");
               terminal.write("\033[1;37mFile Download\033[0m\r\n");
               terminal.write("$ curl -Of " + window.location + "ft/\033[1;34m<uuid>\033[0m/\033[1;33m<file>\033[0m\r\n\n");
             }

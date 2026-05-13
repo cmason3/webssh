@@ -1,6 +1,6 @@
 ## CHANGELOG
 
-### 1.0.1 - In Development
+### 1.0.1 - May 13, 2026
 - Added support for File Transfer uploads via the browser
 
 ### 1.0.0 - May 6, 2026
