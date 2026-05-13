@@ -57,6 +57,7 @@ WebTTY also supports a simple File Transfer capability using the `-ft` argument 
 
 ```
 curl -T <file> http://localhost:8080/ft/
+ or http://localhost:8080/ft
 ```
 
 ```json
