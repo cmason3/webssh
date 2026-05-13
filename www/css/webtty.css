@@ -2,7 +2,7 @@ body {
   color: #b3b0d6;
   background: #29283b;
 }
-body.terminal {
+body.center {
   display: grid;
   grid-template-rows: 100vh;
   place-items: center;

@@ -349,7 +349,7 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string, ft bool) h
     } else if r.URL.Path == "/logs" {
       r.URL.Path = "/logs.html"
 
-    } else if r.URL.Path == "/ft/" {
+    } else if r.URL.Path == "/ft" {
       r.URL.Path = "/ft.html"
     }
 
@@ -457,7 +457,7 @@ func main() {
         if tf, err := os.CreateTemp(dn, ""); err == nil {
           tf.Close(); os.Remove(tf.Name())
           mux.Handle("GET /", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version, true))
-          mux.Handle("GET /ft/{$}", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version, true))
+          mux.Handle("GET /ft", wwwHandler(http.FileServer(http.FS(subFS)), tmpl, Version, true))
           mux.HandleFunc("GET /ft/", ftHandler(dn))
           mux.HandleFunc("PUT /ft/", ftHandler(dn))
 
