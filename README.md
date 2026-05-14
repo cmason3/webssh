@@ -20,12 +20,23 @@ Environment Variables:
   WEBTTY_PASSWORD        Password for WebTTY
 ```
 
+### Example Usage
+
+```
+sudo useradd -r -d / webtty
+sudo -u webtty mkdir /var/tmp/webtty
+
+export WEBTTY_PASSWORD=<PASSWORD>
+/usr/local/bin/webtty -ft /var/tmp/webtty -r 1w /usr/bin/su -l root
+```
+
 ### Installation as a Service
 
 The following commands will install WebTTY as a system service and will provide a password protected root shell via http://localhost:8080.
 
 ```
 sudo useradd -r -d / webtty
+sudo -u webtty mkdir /var/tmp/webtty
 ```
 
 ```
@@ -34,7 +45,8 @@ sudo tee /etc/systemd/system/webtty.service >/dev/null <<-EOF
 Description=WebTTY - Remote Terminal
 
 [Service]
-ExecStart=/usr/local/bin/webtty /usr/bin/su -l root
+Environment="WEBTTY_PASSWORD=<PASSWORD>"
+ExecStart=/usr/local/bin/webtty -ft /var/tmp/webtty -r 1w /usr/bin/su -l root
 Restart=on-success
 User=webtty
 
