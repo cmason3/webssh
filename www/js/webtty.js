@@ -24,6 +24,7 @@
         brightYellow: "#fdd877"
       },
       lineHeight: 1.2,
+      cursorBlink: true,
       cursorInactiveStyle: "none",
       fontWeightBold: "normal"
     });

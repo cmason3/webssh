@@ -45,7 +45,7 @@ import (
   "github.com/lithammer/shortuuid/v4"
 )
 
-const Version = "1.0.2"
+const Version = "1.0.3"
 
 //go:embed www
 var www embed.FS
@@ -390,8 +390,7 @@ func wwwHandler(h http.Handler, tmpl *template.Template, eTag string, ft bool) h
 func main() {
   if _, defined := os.LookupEnv("JOURNAL_STREAM"); !defined {
     fmt.Fprintf(os.Stdout, "WebTTY v%s - Remote Terminal\n", Version)
-    fmt.Fprintf(os.Stdout, "URL https://github.com/cmason3/webtty\n")
-    fmt.Fprintf(os.Stdout, "Copyright (c) 2026 Chris Mason <chris@netnix.org>\n\n")
+    fmt.Fprintf(os.Stdout, "URL https://github.com/cmason3/webtty\n\n")
 
   } else {
     log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
