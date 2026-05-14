@@ -45,7 +45,7 @@ import (
   "github.com/lithammer/shortuuid/v4"
 )
 
-const Version = "1.0.1"
+const Version = "1.0.2"
 
 //go:embed www
 var www embed.FS

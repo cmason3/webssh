@@ -27,7 +27,7 @@
       document.getElementById("progress").innerHTML = "0%";
       document.getElementById("url").innerHTML = "&nbsp;";
 
-      xHR.open("PUT", "/ft/" + files[0].name)
+      xHR.open("PUT", "ft/" + files[0].name)
       xHR.send(files[0])
     }
     else {
