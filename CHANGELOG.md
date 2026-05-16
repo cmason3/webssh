@@ -3,6 +3,7 @@
 ### 1.0.3 - In Development
 - Updated cursor so it now blinks in terminal
 - Removed the copyright notice from the usage screen
+- Updated some cosmetic aspects of `ft.html`
 
 ### 1.0.2 - May 14, 2026
 - Fixed an issue as we weren't using a relative path for `PUT ft/`
